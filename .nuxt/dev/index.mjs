@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { parentPort, threadId } from 'node:worker_threads';
 import { defineEventHandler, handleCacheHeaders, splitCookiesString, isEvent, createEvent, fetchWithEvent, getRequestHeader, eventHandler, setHeaders, sendRedirect, proxyRequest, createError, setResponseHeader, send, getResponseStatus, setResponseStatus, setResponseHeaders, getRequestHeaders, getQuery as getQuery$1, createApp, createRouter as createRouter$1, toNodeListener, lazyEventHandler, getRouterParam, readBody, getResponseStatusText } from 'file:///Users/sv/dev/tg-nuxt-app/node_modules/h3/dist/index.mjs';
-import TelegramBot from 'file:///Users/sv/dev/tg-nuxt-app/node_modules/node-telegram-bot-api/index.js';
 import { getRequestDependencies, getPreloadLinks, getPrefetchLinks, createRenderer } from 'file:///Users/sv/dev/tg-nuxt-app/node_modules/vue-bundle-renderer/dist/runtime.mjs';
 import { stringify, uneval } from 'file:///Users/sv/dev/tg-nuxt-app/node_modules/devalue/index.js';
 import destr from 'file:///Users/sv/dev/tg-nuxt-app/node_modules/destr/dist/index.mjs';
@@ -21,6 +20,7 @@ import { hash } from 'file:///Users/sv/dev/tg-nuxt-app/node_modules/ohash/dist/i
 import { createStorage, prefixStorage } from 'file:///Users/sv/dev/tg-nuxt-app/node_modules/unstorage/dist/index.mjs';
 import unstorage_47drivers_47fs from 'file:///Users/sv/dev/tg-nuxt-app/node_modules/unstorage/drivers/fs.mjs';
 import { toRouteMatcher, createRouter } from 'file:///Users/sv/dev/tg-nuxt-app/node_modules/radix3/dist/index.mjs';
+import TelegramBot from 'file:///Users/sv/dev/tg-nuxt-app/node_modules/node-telegram-bot-api/index.js';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { consola } from 'file:///Users/sv/dev/tg-nuxt-app/node_modules/consola/dist/index.mjs';
 import { getContext } from 'file:///Users/sv/dev/tg-nuxt-app/node_modules/unctx/dist/index.mjs';
@@ -852,9 +852,112 @@ const _zhnhvvB1iJ = (function(nitro) {
   });
 });
 
+function defineNitroPlugin(def) {
+  return def;
+}
+
+const scheduledTasks = false;
+
+const tasks = {
+  
+};
+
+const __runningTasks__ = {};
+async function runTask(name, {
+  payload = {},
+  context = {}
+} = {}) {
+  if (__runningTasks__[name]) {
+    return __runningTasks__[name];
+  }
+  if (!(name in tasks)) {
+    throw createError({
+      message: `Task \`${name}\` is not available!`,
+      statusCode: 404
+    });
+  }
+  if (!tasks[name].resolve) {
+    throw createError({
+      message: `Task \`${name}\` is not implemented!`,
+      statusCode: 501
+    });
+  }
+  const handler = await tasks[name].resolve();
+  const taskEvent = { name, payload, context };
+  __runningTasks__[name] = handler.run(taskEvent);
+  try {
+    const res = await __runningTasks__[name];
+    return res;
+  } finally {
+    delete __runningTasks__[name];
+  }
+}
+
+function defineRenderHandler(handler) {
+  const runtimeConfig = useRuntimeConfig();
+  return eventHandler(async (event) => {
+    if (event.path === `${runtimeConfig.app.baseURL}favicon.ico`) {
+      setResponseHeader(event, "Content-Type", "image/x-icon");
+      return send(
+        event,
+        "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+      );
+    }
+    const response = await handler(event);
+    if (!response) {
+      const _currentStatus = getResponseStatus(event);
+      setResponseStatus(event, _currentStatus === 200 ? 500 : _currentStatus);
+      return send(
+        event,
+        "No response returned from render handler: " + event.path
+      );
+    }
+    const nitroApp = useNitroApp();
+    await nitroApp.hooks.callHook("render:response", response, { event });
+    if (response.headers) {
+      setResponseHeaders(event, response.headers);
+    }
+    if (response.statusCode || response.statusMessage) {
+      setResponseStatus(event, response.statusCode, response.statusMessage);
+    }
+    return response.body;
+  });
+}
+
+let bot = null;
+function initBot() {
+  if (!process.env.BOT_TOKEN) {
+    console.log("No tg-token found");
+    return;
+  }
+  if (!bot) {
+    bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
+    bot.on("message", (msg) => {
+      console.log("\u041F\u043E\u043B\u0443\u0447\u0435\u043D\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435:", msg);
+      const chatId = msg.chat.id;
+      if (msg.web_app_data) {
+        const data = JSON.parse(msg.web_app_data.data);
+        if (data.action === "button_clicked") {
+          bot.sendMessage(chatId, "\u0412\u044B \u043D\u0430\u0436\u0430\u043B\u0438 \u043D\u0430 \u043A\u043D\u043E\u043F\u043A\u0443!");
+        }
+      }
+    });
+    bot.on("callback_query", (query) => {
+    });
+  }
+  return bot;
+}
+function getBot() {
+  return bot;
+}
+
+const _5tLfUNHFDt = defineNitroPlugin((nitroApp) => {
+  initBot();
+});
+
 const rootDir = "/Users/sv/dev/tg-nuxt-app";
 
-const appHead = {"meta":[{"name":"viewport","content":"width=device-width, initial-scale=1"},{"charset":"utf-8"}],"link":[],"style":[],"script":[],"noscript":[]};
+const appHead = {"meta":[{"name":"viewport","content":"width=device-width, initial-scale=1"},{"charset":"utf-8"}],"link":[],"style":[],"script":[{"src":"https://telegram.org/js/telegram-web-app.js","defer":true}],"noscript":[]};
 
 const appRootTag = "div";
 
@@ -950,77 +1053,10 @@ const _hHkkqyuZvz = (function(nitro) {
 
 const plugins = [
   _zhnhvvB1iJ,
+_5tLfUNHFDt,
 _lFwYXCFkbh,
 _hHkkqyuZvz
 ];
-
-const scheduledTasks = false;
-
-const tasks = {
-  
-};
-
-const __runningTasks__ = {};
-async function runTask(name, {
-  payload = {},
-  context = {}
-} = {}) {
-  if (__runningTasks__[name]) {
-    return __runningTasks__[name];
-  }
-  if (!(name in tasks)) {
-    throw createError({
-      message: `Task \`${name}\` is not available!`,
-      statusCode: 404
-    });
-  }
-  if (!tasks[name].resolve) {
-    throw createError({
-      message: `Task \`${name}\` is not implemented!`,
-      statusCode: 501
-    });
-  }
-  const handler = await tasks[name].resolve();
-  const taskEvent = { name, payload, context };
-  __runningTasks__[name] = handler.run(taskEvent);
-  try {
-    const res = await __runningTasks__[name];
-    return res;
-  } finally {
-    delete __runningTasks__[name];
-  }
-}
-
-function defineRenderHandler(handler) {
-  const runtimeConfig = useRuntimeConfig();
-  return eventHandler(async (event) => {
-    if (event.path === `${runtimeConfig.app.baseURL}favicon.ico`) {
-      setResponseHeader(event, "Content-Type", "image/x-icon");
-      return send(
-        event,
-        "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-      );
-    }
-    const response = await handler(event);
-    if (!response) {
-      const _currentStatus = getResponseStatus(event);
-      setResponseStatus(event, _currentStatus === 200 ? 500 : _currentStatus);
-      return send(
-        event,
-        "No response returned from render handler: " + event.path
-      );
-    }
-    const nitroApp = useNitroApp();
-    await nitroApp.hooks.callHook("render:response", response, { event });
-    if (response.headers) {
-      setResponseHeaders(event, response.headers);
-    }
-    if (response.statusCode || response.statusMessage) {
-      setResponseStatus(event, response.statusCode, response.statusMessage);
-    }
-    return response.body;
-  });
-}
 
 const errorHandler = (async function errorhandler(error, event) {
   const { stack, statusCode, statusMessage, message } = normalizeError(error);
@@ -1151,11 +1187,11 @@ const _Do3Tdt = defineCachedEventHandler(async (event) => {
   // 1 week
 });
 
-const _lazy_bk4ADy = () => Promise.resolve().then(function () { return telegramBot$1; });
+const _lazy_Isp5xb = () => Promise.resolve().then(function () { return bot_post$1; });
 const _lazy_viSiWO = () => Promise.resolve().then(function () { return renderer$1; });
 
 const handlers = [
-  { route: '/api/telegram-bot', handler: _lazy_bk4ADy, lazy: true, middleware: false, method: undefined },
+  { route: '/api/bot', handler: _lazy_Isp5xb, lazy: true, middleware: false, method: "post" },
   { route: '/__nuxt_error', handler: _lazy_viSiWO, lazy: true, middleware: false, method: undefined },
   { route: '/api/_nuxt_icon/:collection', handler: _Do3Tdt, lazy: false, middleware: false, method: undefined },
   { route: '/**', handler: _lazy_viSiWO, lazy: true, middleware: false, method: undefined }
@@ -1353,23 +1389,21 @@ const errorDev = /*#__PURE__*/Object.freeze({
   template: template$1
 });
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
-bot.on("message", (msg) => {
-  const chatId = msg.chat.id;
-  if (msg.web_app_data) {
-    const data = JSON.parse(msg.web_app_data.data);
-    if (data.action === "button_clicked") {
-      bot.sendMessage(chatId, "\u0412\u044B \u043D\u0430\u0436\u0430\u043B\u0438 \u043D\u0430 \u043A\u043D\u043E\u043F\u043A\u0443!");
-    }
+const bot_post = defineEventHandler(async (event) => {
+  const { chatId, action, body } = await readBody(event);
+  const bot = getBot();
+  if (!bot) {
+    throw new Error("Bot is not initialized");
   }
-});
-const telegramBot = defineEventHandler((event) => {
-  return { message: "Bot running!" };
+  if (action === "button_clicked") {
+    await bot.sendMessage(chatId, "\u0412\u044B \u043D\u0430\u0436\u0430\u043B\u0438 \u043D\u0430 \u043A\u043D\u043E\u043F\u043A\u0443!");
+  }
+  return { ok: true };
 });
 
-const telegramBot$1 = /*#__PURE__*/Object.freeze({
+const bot_post$1 = /*#__PURE__*/Object.freeze({
   __proto__: null,
-  default: telegramBot
+  default: bot_post
 });
 
 const Vue3 = version[0] === "3";
