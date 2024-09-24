@@ -19,6 +19,7 @@
       "args": [
         "dev"
       ],
+      "runtimeExecutable": "bun"
     }
   ],
   "compounds": [

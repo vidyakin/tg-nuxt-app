@@ -34,6 +34,6 @@ export default defineNuxtConfig({
 
   modules: ['@pinia/nuxt', '@nuxt/ui'],
   nitro: {
-    plugins: ['~/server/plugins/bot.ts']
+    plugins: ['~/server/plugins/bot.ts'],
   },
 })
