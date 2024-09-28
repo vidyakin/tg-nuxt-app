@@ -22,6 +22,7 @@
     "@nuxt/ui": "^2.18.5",
     "@pinia/nuxt": "^0.5.4",
     "@rollup/rollup-linux-x64-gnu": "^4.22.5",
+    "@rollup/wasm-node": "^4.22.5",
     "sass": "^1.79.3"
   }
 }
