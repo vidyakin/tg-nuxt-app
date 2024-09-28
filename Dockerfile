@@ -1,5 +1,5 @@
 # Используем официальный образ Bun как базовый
-FROM oven/bun:latest as base
+FROM oven/bun:latest AS base
 
 # Устанавливаем рабочую директорию в контейнере
 WORKDIR /app
