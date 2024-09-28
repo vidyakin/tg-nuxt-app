@@ -14,7 +14,7 @@ RUN bun install
 COPY . .
 
 # Собираем приложение
-RUN bun run build
+RUN bun --bun run build
 
 # Экспонируем порт, на котором работает приложение (обычно 3000 для Nuxt)
 EXPOSE 3000
